@@ -1,0 +1,26 @@
+#ifndef EVENT_H
+#define EVENT_H
+
+namespace BB_Event
+{
+    enum Event
+    {
+
+        NETWORK_SETTINGS__LOADED,
+        NETWORK_SETTINGS__FAILED_LOAD,
+        NETWORK_SETTINGS__SAVED,
+        NETWORK_SETTINGS__FAILED_SAVE,
+
+        NETWORK_SETTINGS__INVALID_SETTINGS,
+        NETWORK_SETTINGS__VALID_SETTINGS,
+        NETWORK_SETTINGS__CONVERTED_SETTINGS,
+        NETWORK_SETTINGS__DEFAULT_SETTINGS,
+        NETWORK_SETTINGS__USING_SETTINGS,
+
+        MALLOC__FAILED,
+    };
+
+    void event(Event event);
+}
+
+#endif
