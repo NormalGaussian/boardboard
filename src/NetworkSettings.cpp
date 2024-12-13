@@ -1,6 +1,8 @@
 #include "NetworkSettings.hpp"
 #include "Event.hpp"
 #include "Utils.hpp"
+#include <cstring>
+#include <EEPROM.h>
 
 using BB_Event::Event;
 using BB_Event::event;
@@ -10,6 +12,8 @@ using BB_Utils::isNullTerminated;
 
 namespace BB_NetworkSettings
 {
+    char sentinel[8] = "BB:.:NS";
+    
     /**
      * Check if the buffer is a sentinel
      */
@@ -134,7 +138,7 @@ namespace BB_NetworkSettings
             return false;
         }
 
-        char checksum = xorChecksum(structure, sizeof(T));
+        char checksum = xorChecksum(&structure, sizeof(T));
 
         // Copy the data into the buffer, adding sentinels and checksum
         memcpy(buffer, sentinel, sizeof(sentinel));
@@ -159,7 +163,7 @@ namespace BB_NetworkSettings
         EEPROM.end();
 
         // Compare
-        bool result = memcmp(structure, readback, size) == 0;
+        bool result = memcmp(&structure, readback, size) == 0;
 
         if(!result) {
             event(Event::NETWORK_SETTINGS__FAILED_SAVE);
@@ -407,8 +411,14 @@ namespace BB_NetworkSettings
             NetworkSettings converted;
             memset(&converted, 0, sizeof(NetworkSettings));
             reset(&converted.v1);
-            strcpy(converted.v1.ssid, settings->v2.ssid);
-            strcpy(converted.v1.password, settings->v2.password);
+            strncpy(converted.v1.ssid, settings->v2.ssid, sizeof(converted.v1.ssid));
+            if(converted.v1.ssid[sizeof(converted.v1.ssid) - 1] != '\0') {
+                return false;
+            }
+            strncpy(converted.v1.password, settings->v2.password, sizeof(converted.v1.password));
+            if(converted.v1.password[sizeof(converted.v1.password) - 1] != '\0') {
+                return false;
+            }
             memcpy(settings, &converted, sizeof(NetworkSettings));
             return true;
 
@@ -434,9 +444,15 @@ namespace BB_NetworkSettings
             NetworkSettings converted;
             memset(&converted, 0, sizeof(NetworkSettings));
             reset(&converted.v2);
-            strcpy(converted.v2.ssid, settings->v1.ssid);
-            strcpy(converted.v2.password, settings->v1.password);
-            strcpy(converted.v2.hostname, "");
+            strncpy(converted.v2.ssid, settings->v1.ssid, sizeof(converted.v2.ssid));
+            if(converted.v2.ssid[sizeof(converted.v2.ssid) - 1] != '\0') {
+                return false;
+            }
+            strncpy(converted.v2.password, settings->v1.password, sizeof(converted.v2.password));
+            if(converted.v2.password[sizeof(converted.v2.password) - 1] != '\0') {
+                return false;
+            }
+            strncpy(converted.v2.hostname, "", sizeof(converted.v2.hostname));
             memcpy(settings, &converted, sizeof(NetworkSettings));
             return true;
 

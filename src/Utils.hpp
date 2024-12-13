@@ -17,8 +17,12 @@ namespace BB_Utils
         ~RAII_Malloc();
         bool failed_to_allocate();
         size_t size();
-        operator void *();
-        operator char *();
+        operator void *() {
+            return ptr;
+        }
+        operator char *() {
+            return (char *)ptr;
+        }
     };
 
     /**
@@ -35,6 +39,8 @@ namespace BB_Utils
      * A simple XOR checksum over a buffer
      */
     char xorChecksum(char *buffer, size_t len);
+    char xorChecksum(void *buffer, size_t len);
+    char xorChecksum(const void *buffer, size_t len);
     
     /**
      * Check if the buffer is null terminated
@@ -42,7 +48,28 @@ namespace BB_Utils
      * n.b. this does not check that the last character is a '\0'
      */
     bool isNullTerminated(char *buffer, size_t len);
-    
+
+    /**
+     * Copy a string from src to dest, ensuring that the string is null terminated
+     * and that the length is not exceeded.
+     * 
+     * returns true if the string was copied, false if it was unsuitable
+     */
+    bool copyString(char *dest, const char *src, size_t len);
+
+    /**
+     * Copy a string from src to dest, ensuring that the string is null terminated and not empty
+     * and that the length is not exceeded.
+     * 
+     * returns true if the string was copied, false if it was unsuitable
+     */
+    bool copyNonEmptyString(char *dest, const char *src, size_t len);
+
+    /**
+     * Check if a string is empty
+     */
+    bool isEmptyString(const char *str);
+
 }
 
 #endif

@@ -1,8 +1,15 @@
 #include "Network.hpp"
 #include "NetworkSettings.hpp"
+#include "Utils.hpp"
 
-#define TARGET_SETTINGS_ADDRESS 0
-#define OWN_SETTINGS_ADDRESS    100
+#define CONNECTED_NETWORK_SETTINGS_ADDRESS 0
+#define HOSTED_NETWORK_SETTINGS_ADDRESS    100
+
+using BB_NetworkSettings::NetworkSettings_v1;
+using BB_NetworkSettings::NetworkSettings;
+using namespace BB_NetworkSettings;
+using namespace BB_Utils;
+using BB_Display::display;
 
 namespace BB_Network
 {
@@ -102,56 +109,44 @@ namespace BB_Network
         }
     }
 
-    bool Network::Network::loadSettings() {
-        // Read stored target SSID and password from EEPROM
-        BB_NetworkSettings::NetworkSettings storedTargetSettings;
-        bool loadedTargetSettings = BB_NetworkSettings::load(TARGET_SETTINGS_ADDRESS, &storedTargetSettings);
-         
+    bool Network::loadSettings() {
+        bool result = true;
+        NetworkSettings union_tmp;
         
-        if(loadedTargetSettings) {
-            strcpy(target_ssid, targetSettings.v1.ssid);
-            strcpy(target_password, targetSettings.v1.password);
+        // Load connected network settings
+        if(BB_NetworkSettings::load(CONNECTED_NETWORK_SETTINGS_ADDRESS, &union_tmp) && BB_NetworkSettings::convertTo_v1(&union_tmp)) {
+            memcpy(&connected_network_settings, &union_tmp.v1, sizeof(NetworkSettings_v1));
+        } else {
+            result = false;
         }
 
-        // Read stored own SSID and password from EEPROM
-        BB_NetworkSettings::NetworkSettings ownSettings;
-        bool loadedOwnSettings = BB_NetworkSettings::load(OWN_SETTINGS_ADDRESS, &ownSettings);
-        if(loadedOwnSettings) {
-            strcpy(own_ssid, ownSettings.v1.ssid);
-            strcpy(own_password, ownSettings.v1.password);
+        // Load hosted network settings
+        if(BB_NetworkSettings::load(HOSTED_NETWORK_SETTINGS_ADDRESS, &union_tmp) && BB_NetworkSettings::convertTo_v1(&union_tmp)) {
+            memcpy(&hosted_network_settings, &union_tmp.v1, sizeof(NetworkSettings_v1));
+        } else {
+            result = false;
         }
 
-        return true;
+        return result;
     }
 
-    bool Network::Network::saveSettings() {
-        // Save target SSID and password to EEPROM
-        BB_NetworkSettings::NetworkSettings targetSettings;
-        targetSettings.v1.version = 1;
-        strcpy(targetSettings.v1.ssid, target_ssid);
-        strcpy(targetSettings.v1.password, target_password);
-        bool savedTargetSettings = BB_NetworkSettings::save(TARGET_SETTINGS_ADDRESS, &targetSettings);
+    bool Network::saveSettings() {
+        bool savedConnected = BB_NetworkSettings::save(CONNECTED_NETWORK_SETTINGS_ADDRESS, &connected_network_settings);
+        bool savedHosted = BB_NetworkSettings::save(HOSTED_NETWORK_SETTINGS_ADDRESS, &hosted_network_settings);
 
-        // Save own SSID and password to EEPROM
-        BB_NetworkSettings::NetworkSettings ownSettings;
-        ownSettings.v1.version = 1;
-        strcpy(ownSettings.v1.ssid, own_ssid);
-        strcpy(ownSettings.v1.password, own_password);
-        bool savedOwnSettings = BB_NetworkSettings::save(OWN_SETTINGS_ADDRESS, &ownSettings);
-
-        return savedTargetSettings && savedOwnSettings;
+        return savedConnected && savedHosted;
     }
 
-    int Network::Network::constructor(int address_offset) {
+    bool Network::constructor(int address_offset) {
         // delete old config
         WiFi.disconnect(true);
         WiFi.onEvent([](WiFiEvent_t event, WiFiEventInfo_t info)
                      { network.WiFiEventHandler(event); });
 
-        loadSettings();
+        return loadSettings();
     }
 
-    Network::Network::Network() {
+    Network::Network() {
         constructor(0);
     }
 
@@ -171,37 +166,118 @@ namespace BB_Network
         WiFi.disconnect(true, true);
     }
 
-    bool connect() {
-        display.reset();
-        display.printlnf("Connecting to %s", target_ssid);
+    bool Network::connect() {
+        mode = Mode::CLIENT;
 
-        WiFi.begin(target_ssid, target_password);
+        NetworkSettings_v1 *settings = &connected_network_settings;
+
+        display.reset();
+        display.printlnf("Connecting to %s", settings->ssid);
+
+        WiFi.begin(settings->ssid, settings->password);
 
         while (WiFi.status() != WL_CONNECTED)
         {
             delay(1000);
             display.printlnf("Connecting...");
+
+            // TODO: Add timeout & false return
         }
 
-        // Save 
-
-        display.printlnf("Connected to %s", target_ssid);
-    }
-
-    bool connect(const char *ssid, const char *password)
-    {
-        display.reset();
-        display.printlnf("Connecting to %s", ssid);
-
-        WiFi.begin(ssid, password);
-
-        while (WiFi.status() != WL_CONNECTED)
-        {
-            delay(1000);
-            display.printlnf("Connecting...");
-        }
+        display.printlnf("Connected to %s", settings->ssid);
         
+        display.printlnf("IP: %s", IP());
 
-        display.printlnf("Connected to %s", ssid);
+        return true;
     }
+
+    bool Network::updateConnection(const char *ssid, const char *password) {
+        NetworkSettings_v1 newSettings;
+        BB_NetworkSettings::reset(&newSettings);
+        
+        bool result = true;
+        result = result && BB_Utils::copyNonEmptyString(newSettings.ssid, ssid, sizeof(newSettings.ssid));
+        result = result && BB_Utils::copyNonEmptyString(newSettings.password, password, sizeof(newSettings.password));
+
+        if(result) {
+            memcpy(&connected_network_settings, &newSettings, sizeof(NetworkSettings_v1));
+            result = result && saveSettings();
+        }
+
+        return result;
+    }
+
+    bool Network::connect(const char *ssid, const char *password)
+    {
+        return updateConnection(ssid, password) && connect();
+    }
+
+    void Network::disconnect()
+    {
+        WiFi.disconnect(true, true);
+        mode = Mode::OFF;
+    }
+
+    bool Network::host()
+    {
+        NetworkSettings_v1 *settings = &hosted_network_settings;
+
+        mode = Mode::HOST;
+        display.reset();
+        display.printlnf("Hosting %s", settings->ssid);
+
+        WiFi.softAP(settings->ssid, settings->password);
+        while(WiFi.softAPIP() == INADDR_NONE) {
+            delay(1000);
+            display.printlnf("Hosting...");
+        }
+
+        display.printlnf("Hosted %s", settings->ssid);
+
+        display.printlnf("IP: %s", IP());
+
+        return true;
+    }
+
+    bool Network::updateHost(const char *ssid, const char *password) {
+        NetworkSettings_v1 newSettings;
+        BB_NetworkSettings::reset(&newSettings);
+        
+        bool result = true;
+        result = result && BB_Utils::copyNonEmptyString(newSettings.ssid, ssid, sizeof(newSettings.ssid));
+        result = result && BB_Utils::copyNonEmptyString(newSettings.password, password, sizeof(newSettings.password));
+
+        if(result) {
+            memcpy(&hosted_network_settings, &newSettings, sizeof(NetworkSettings_v1));
+            result = result && saveSettings();
+        }
+
+        return result;
+    }
+
+    bool Network::host(const char *ssid, const char *password)
+    {
+        return updateHost(ssid, password) && host();
+    }
+
+    void Network::stopHosting()
+    {
+        WiFi.softAPdisconnect(true);
+        mode = Mode::OFF;
+    }
+
+    String Network::IP()
+    {
+        switch (mode)
+        {
+            case Mode::CLIENT:
+                return WiFi.localIP().toString();
+            case Mode::HOST:
+                return WiFi.softAPIP().toString();
+            default:
+                return "";
+        }
+    }
+
+    Network network = Network();
 }

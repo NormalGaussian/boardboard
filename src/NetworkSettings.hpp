@@ -1,9 +1,11 @@
 #ifndef NETWORK_SETTINGS_H
 #define NETWORK_SETTINGS_H
 
-#include "Network.hpp"
+#include <stdlib.h>
 
 namespace BB_NetworkSettings {
+    extern char sentinel[8];
+
     // All versions are expected to be compatible with this one
     struct NetworkSettings_v0
     {

@@ -13,6 +13,9 @@
 #define TFT_RST 23
 #define TFT_BL 4
 
+namespace BB_Display
+{
+
 class Display
 {
 private:
@@ -31,13 +34,25 @@ public:
      */
     void reset();
 
+    /**
+     * Print text to the display at the current cursor position.
+     */
     size_t printf(const char *format, ...);
+    size_t printf(String format, ...);
+
+    /**
+     * Print text to the display at the current cursor position
+     *  and move the cursor to the next line.
+     */
     size_t printlnf(const char *format, ...);
+    size_t printlnf(String format, ...);
 };
 
 /**
  * The device only has a single display, so it should be a singleton.
  */
-Display display = Display();
+extern Display display;
+
+}
 
 #endif

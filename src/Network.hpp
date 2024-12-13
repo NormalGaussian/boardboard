@@ -6,11 +6,10 @@
 #include <EEPROM.h>
 #include "NetworkSettings.hpp"
 
-char sentinel[8] = "BB:.:NS";
+using BB_NetworkSettings::NetworkSettings_v1;
 
 namespace BB_Network
 {
-
     enum Mode {
         CLIENT,
         HOST,
@@ -28,14 +27,14 @@ namespace BB_Network
         /**
          * Settings to use when hosting a network. 
          */
-        BB_NetworkSettings::NetworkSettings_v1 hosted_network_settings;
+        NetworkSettings_v1 hosted_network_settings;
 
         /**
          * Settings to use when connecting to a network.
          */
-        BB_NetworkSettings::NetworkSettings_v1 connected_network_settings;
+        NetworkSettings_v1 connected_network_settings;
 
-        int constructor(int address_offset);
+        bool constructor(int address_offset);
 
         bool saveSettings();
         bool loadSettings();
@@ -45,23 +44,27 @@ namespace BB_Network
         Network(int address_offset);
         ~Network();
 
+        Mode getMode() {
+            return mode;
+        }
+
+        bool updateConnection(const char *ssid, const char *password);
         bool connect();
         bool connect(const char *ssid, const char *password);
         void disconnect();
 
-        void host(const char *ssid, const char *password);
+        bool updateHost(const char *ssid, const char *password);
+        bool host();
+        bool host(const char *ssid, const char *password);
         void stopHosting();
 
-        void serve(const char *path, const char *content, const char *contentType);
-        void handle(const char *path, void (*handler)(WiFiClient client));
-
-        char *IP();
+        String IP();
     };
 
     /**
      * The device only has one network setup, so it should be a singleton.
      */
-    Network network = Network();
+    extern Network network;
 
 };
 
