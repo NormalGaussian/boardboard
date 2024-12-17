@@ -1,5 +1,4 @@
-#ifndef DISPLAYLOGGER_H
-#define DISPLAYLOGGER_H
+#pragma once
 
 #include "Logger.hpp"
 #include "Display.hpp"
@@ -20,5 +19,3 @@ namespace BB_Logger {
 
         std::shared_ptr<DisplayLogger> getDisplayLogger();
 };
-
-#endif

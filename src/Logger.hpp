@@ -1,5 +1,4 @@
-#ifndef LOGGER_H
-#define LOGGER_H
+#pragma once
 
 #include <memory>
 
@@ -76,5 +75,3 @@ namespace BB_Logger
 
     std::shared_ptr<Logger> setDefaultLogger(std::shared_ptr<Logger> logger);
 }
-
-#endif

@@ -1,5 +1,4 @@
-#ifndef NETWORK_H
-#define NETWORK_H
+#pragma once
 
 #include <WiFi.h>
 #include "Display.hpp"
@@ -69,5 +68,3 @@ namespace BB_Network
     std::shared_ptr<Network> getNetwork(int address_offset = 0);
 
 };
-
-#endif

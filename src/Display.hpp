@@ -1,5 +1,4 @@
-#ifndef DISPLAY_H
-#define DISPLAY_H
+#pragma once
 
 #include <stddef.h>
 #include <memory>
@@ -36,5 +35,3 @@ namespace BB_Display
      */
     std::shared_ptr<Display> getDisplay();
 };
-
-#endif

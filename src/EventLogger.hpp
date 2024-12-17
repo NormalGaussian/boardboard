@@ -1,5 +1,4 @@
-#ifndef EVENT_LOGGER_H
-#define EVENT_LOGGER_H
+#pragma once
 
 #include "Event.hpp"
 #include "Logger.hpp"
@@ -18,5 +17,3 @@ namespace BB_Event {
             static std::shared_ptr<EventLogger> create(std::weak_ptr<Logger> logger);
     };
 }
-
-#endif

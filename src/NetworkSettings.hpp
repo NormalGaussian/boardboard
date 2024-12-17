@@ -1,5 +1,4 @@
-#ifndef NETWORK_SETTINGS_H
-#define NETWORK_SETTINGS_H
+#pragma once
 
 #include <stdlib.h>
 
@@ -55,5 +54,3 @@ namespace BB_NetworkSettings
     bool convertTo_v1(NetworkSettings *networkSettings);
     bool convertTo_v2(NetworkSettings *networkSettings);
 }
-
-#endif

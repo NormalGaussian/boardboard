@@ -1,5 +1,4 @@
-#ifndef UTILS_H
-#define UTILS_H
+#pragma once
 
 #include <stddef.h>
 
@@ -75,5 +74,3 @@ namespace BB_Utils
     bool isEmptyString(const char *str);
 
 }
-
-#endif
