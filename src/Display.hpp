@@ -1,58 +1,40 @@
 #ifndef DISPLAY_H
 #define DISPLAY_H
 
-#include <Adafruit_GFX.h>    // Core graphics library
-#include <Adafruit_ST7789.h> // Hardware-specific library for ST7789
-#include <SPI.h>
-
-// Device specific pinouts
-#define TFT_MOSI 19
-#define TFT_SCLK 18
-#define TFT_CS 5
-#define TFT_DC 16
-#define TFT_RST 23
-#define TFT_BL 4
+#include <stddef.h>
+#include <memory>
 
 namespace BB_Display
 {
 
-class Display
-{
-private:
-    Adafruit_ST7789 tft = Adafruit_ST7789(TFT_CS, TFT_DC, TFT_MOSI, TFT_SCLK, TFT_RST);
+    class Display
+    {
+    public:
+        /**
+         * Reset the display to a blank screen with all graphics
+         *  settings reset to default.
+         *
+         * This is useful when you do not know the state of the
+         *  display and want to ensure consistency.
+         */
+        virtual void reset() = 0;
 
-public:
-    Display(/* args */);
-    ~Display();
+        /**
+         * Print text to the display at the current cursor position.
+         */
+        virtual size_t printf(const char *format, ...) = 0;
+
+        /**
+         * Print text to the display at the current cursor position
+         *  and move the cursor to the next line.
+         */
+        virtual size_t printlnf(const char *format, ...) = 0;
+    };
 
     /**
-     * Reset the display to a blank screen with all graphics
-     *  settings reset to default.
-     * 
-     * This is useful when you do not know the state of the
-     *  display and want to ensure consistency.
+     * The device only has a single display, so it should be a singleton.
      */
-    void reset();
-
-    /**
-     * Print text to the display at the current cursor position.
-     */
-    size_t printf(const char *format, ...);
-    size_t printf(String format, ...);
-
-    /**
-     * Print text to the display at the current cursor position
-     *  and move the cursor to the next line.
-     */
-    size_t printlnf(const char *format, ...);
-    size_t printlnf(String format, ...);
+    std::shared_ptr<Display> getDisplay();
 };
-
-/**
- * The device only has a single display, so it should be a singleton.
- */
-extern Display display;
-
-}
 
 #endif

@@ -3,7 +3,8 @@
 
 #include <stdlib.h>
 
-namespace BB_NetworkSettings {
+namespace BB_NetworkSettings
+{
     extern char sentinel[8];
 
     // All versions are expected to be compatible with this one
@@ -44,7 +45,7 @@ namespace BB_NetworkSettings {
     bool load(int address, NetworkSettings_v1 *networkSettings);
     bool load(int address, NetworkSettings_v2 *networkSettings);
     bool load(int address, NetworkSettings *networkSettings);
-    
+
     bool save(int address, NetworkSettings_v0 *networkSettings);
     bool save(int address, NetworkSettings_v1 *networkSettings);
     bool save(int address, NetworkSettings_v2 *networkSettings);

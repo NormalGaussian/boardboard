@@ -6,14 +6,14 @@
 
 using BB_Event::Event;
 using BB_Event::event;
-using BB_Utils::RAII_Malloc;
-using BB_Utils::xorChecksum;
 using BB_Utils::isNullTerminated;
+using BB_Utils::Allocation;
+using BB_Utils::xorChecksum;
 
 namespace BB_NetworkSettings
 {
     char sentinel[8] = "BB:.:NS";
-    
+
     /**
      * Check if the buffer is a sentinel
      */
@@ -21,7 +21,7 @@ namespace BB_NetworkSettings
     {
         return strncmp(buffer, sentinel, sizeof(sentinel)) == 0;
     }
-    
+
     bool validateSettings(NetworkSettings_v0 *settings)
     {
         if (settings->version != 0)
@@ -118,7 +118,8 @@ namespace BB_NetworkSettings
     /**
      * Calculate the size required to store the data with sentinels and checksum
      */
-    size_t required_size(size_t size) {
+    size_t required_size(size_t size)
+    {
         size_t required_space = 0;
         required_space += size;
         required_space += 2 * sizeof(sentinel);
@@ -129,11 +130,13 @@ namespace BB_NetworkSettings
     /**
      * Save a structure to EEPROM with sentinels and checksum
      */
-    template<typename T>
-    bool saveToEEPROM(int address, const T& structure) {
+    template <typename T>
+    bool saveToEEPROM(int address, const T &structure)
+    {
         size_t size = required_size(sizeof(T));
-        RAII_Malloc buffer(size);
-        if(buffer.failed_to_allocate()) {
+        Allocation buffer(size);
+        if (buffer.failed_to_allocate())
+        {
             event(Event::NETWORK_SETTINGS__FAILED_SAVE);
             return false;
         }
@@ -151,10 +154,11 @@ namespace BB_NetworkSettings
         EEPROM.writeBytes(address, buffer, size);
         EEPROM.commit();
         EEPROM.end();
-        
+
         // Read back to ensure it was written correctly
-        RAII_Malloc readback(size);
-        if(readback.failed_to_allocate()) {
+        Allocation readback(size);
+        if (readback.failed_to_allocate())
+        {
             event(Event::NETWORK_SETTINGS__FAILED_SAVE);
             return false;
         }
@@ -165,9 +169,12 @@ namespace BB_NetworkSettings
         // Compare
         bool result = memcmp(&structure, readback, size) == 0;
 
-        if(!result) {
+        if (!result)
+        {
             event(Event::NETWORK_SETTINGS__FAILED_SAVE);
-        } else {
+        }
+        else
+        {
             event(Event::NETWORK_SETTINGS__SAVED);
         }
 
@@ -176,7 +183,8 @@ namespace BB_NetworkSettings
 
     bool save(int address, NetworkSettings_v0 *settings)
     {
-        if(!validateSettings(settings)) {
+        if (!validateSettings(settings))
+        {
             event(Event::NETWORK_SETTINGS__FAILED_SAVE);
             return false;
         }
@@ -184,7 +192,8 @@ namespace BB_NetworkSettings
     }
     bool save(int address, NetworkSettings_v1 *settings)
     {
-        if(!validateSettings(settings)) {
+        if (!validateSettings(settings))
+        {
             event(Event::NETWORK_SETTINGS__FAILED_SAVE);
             return false;
         }
@@ -192,7 +201,8 @@ namespace BB_NetworkSettings
     }
     bool save(int address, NetworkSettings_v2 *settings)
     {
-        if(!validateSettings(settings)) {
+        if (!validateSettings(settings))
+        {
             event(Event::NETWORK_SETTINGS__FAILED_SAVE);
             return false;
         }
@@ -204,26 +214,33 @@ namespace BB_NetworkSettings
         //  that the union is always "cast down" to the
         //  correct struct before being saved.
 
-        if(!validateSettings(settings)) {
+        if (!validateSettings(settings))
+        {
             event(Event::NETWORK_SETTINGS__FAILED_SAVE);
             return false;
         }
 
         uint8_t version = settings->v0.version;
-        switch (version) {
-            case 0: return save(address, &settings->v0);
-            case 1: return save(address, &settings->v1);
-            case 2: return save(address, &settings->v2);
+        switch (version)
+        {
+        case 0:
+            return save(address, &settings->v0);
+        case 1:
+            return save(address, &settings->v1);
+        case 2:
+            return save(address, &settings->v2);
 
-            default:
-                // Unknown version - cannot save
-                return false;
+        default:
+            // Unknown version - cannot save
+            return false;
         }
     }
 
-    bool loadAndValidateStruct_fromEEPROM(int address, void *settings, size_t size, bool (*valid)(void *)) {
-        RAII_Malloc buffer(required_size(size));
-        if(buffer.failed_to_allocate()) {
+    bool loadAndValidateStruct_fromEEPROM(int address, void *settings, size_t size, bool (*valid)(void *))
+    {
+        Allocation buffer(required_size(size));
+        if (buffer.failed_to_allocate())
+        {
             event(Event::NETWORK_SETTINGS__FAILED_LOAD);
             return false;
         }
@@ -239,7 +256,7 @@ namespace BB_NetworkSettings
             event(Event::NETWORK_SETTINGS__FAILED_LOAD);
             return false;
         }
-        if(!isSentinel(buffer + sizeof(sentinel) + size + 1))
+        if (!isSentinel(buffer + sizeof(sentinel) + size + 1))
         {
             event(Event::NETWORK_SETTINGS__FAILED_LOAD);
             return false;
@@ -255,7 +272,8 @@ namespace BB_NetworkSettings
 
         // Use the validation function
         bool result = valid(settings);
-        if(!result) {
+        if (!result)
+        {
             event(Event::NETWORK_SETTINGS__FAILED_LOAD);
             return false;
         }
@@ -266,32 +284,34 @@ namespace BB_NetworkSettings
         return result;
     }
 
-    bool load(int address, NetworkSettings_v0 *settings) {
-        return loadAndValidateStruct_fromEEPROM(address, settings, sizeof(NetworkSettings_v0), [](void *settings) {
-            return validateSettings((NetworkSettings_v0 *)settings);
-        });
+    bool load(int address, NetworkSettings_v0 *settings)
+    {
+        return loadAndValidateStruct_fromEEPROM(address, settings, sizeof(NetworkSettings_v0), [](void *settings)
+                                                { return validateSettings((NetworkSettings_v0 *)settings); });
     }
 
-    bool load(int address, NetworkSettings_v1 *settings) {
-        return loadAndValidateStruct_fromEEPROM(address, settings, sizeof(NetworkSettings_v1), [](void *settings) {
-            return validateSettings((NetworkSettings_v1 *)settings);
-        });
+    bool load(int address, NetworkSettings_v1 *settings)
+    {
+        return loadAndValidateStruct_fromEEPROM(address, settings, sizeof(NetworkSettings_v1), [](void *settings)
+                                                { return validateSettings((NetworkSettings_v1 *)settings); });
     }
 
-    bool load(int address, NetworkSettings_v2 *settings) {
-        return loadAndValidateStruct_fromEEPROM(address, settings, sizeof(NetworkSettings_v2), [](void *settings) {
-            return validateSettings((NetworkSettings_v2 *)settings);
-        });
+    bool load(int address, NetworkSettings_v2 *settings)
+    {
+        return loadAndValidateStruct_fromEEPROM(address, settings, sizeof(NetworkSettings_v2), [](void *settings)
+                                                { return validateSettings((NetworkSettings_v2 *)settings); });
     }
 
-    bool load(int address, NetworkSettings *structure) {
+    bool load(int address, NetworkSettings *structure)
+    {
         // This ensures that the underlying struct is always
         //  *cast up* to the union. This is necessary as the
         //  saved size may differ from that of the union.
 
         size_t size = required_size(sizeof(NetworkSettings));
-        RAII_Malloc buffer(size);
-        if(buffer.failed_to_allocate()) {
+        Allocation buffer(size);
+        if (buffer.failed_to_allocate())
+        {
             event(Event::NETWORK_SETTINGS__FAILED_LOAD);
             return false;
         }
@@ -307,39 +327,50 @@ namespace BB_NetworkSettings
             event(Event::NETWORK_SETTINGS__FAILED_LOAD);
             return false;
         }
-        
+
         uint8_t version = buffer[sizeof(sentinel)];
-        if(version != 0 && version != 1 && version != 2) {
+        if (version != 0 && version != 1 && version != 2)
+        {
             // We don't know how to load this version
             event(Event::NETWORK_SETTINGS__FAILED_LOAD);
             return false;
         }
         size_t settings_size = 0;
-        switch (version) {
-            case 0: settings_size = sizeof(NetworkSettings_v0); break;
-            case 1: settings_size = sizeof(NetworkSettings_v1); break;
-            case 2: settings_size = sizeof(NetworkSettings_v2); break;
-            default: return false;
+        switch (version)
+        {
+        case 0:
+            settings_size = sizeof(NetworkSettings_v0);
+            break;
+        case 1:
+            settings_size = sizeof(NetworkSettings_v1);
+            break;
+        case 2:
+            settings_size = sizeof(NetworkSettings_v2);
+            break;
+        default:
+            return false;
         }
 
         // Verify the checksum
         char checksum = *(buffer + sizeof(sentinel) + settings_size);
         char calculated_checksum = xorChecksum(buffer + sizeof(sentinel), settings_size);
-        if(checksum != calculated_checksum) {
+        if (checksum != calculated_checksum)
+        {
             event(Event::NETWORK_SETTINGS__FAILED_LOAD);
             return false;
         }
 
         // Validate the end sentinel
-        if(!isSentinel(buffer + sizeof(sentinel) + settings_size + 1))
+        if (!isSentinel(buffer + sizeof(sentinel) + settings_size + 1))
         {
             event(Event::NETWORK_SETTINGS__FAILED_LOAD);
             return false;
         }
 
         // Validate the contents
-        bool result = validateSettings((NetworkSettings *) (void *) buffer + sizeof(sentinel));
-        if(!result) {
+        bool result = validateSettings((NetworkSettings *)(void *)buffer + sizeof(sentinel));
+        if (!result)
+        {
             event(Event::NETWORK_SETTINGS__FAILED_LOAD);
             return false;
         }
@@ -351,8 +382,6 @@ namespace BB_NetworkSettings
         event(Event::NETWORK_SETTINGS__LOADED);
         return result;
     }
-
-
 
     void reset(NetworkSettings_v0 *settings)
     {
@@ -377,15 +406,24 @@ namespace BB_NetworkSettings
     void reset(NetworkSettings *settings)
     {
         memset(settings, 0, sizeof(NetworkSettings));
-        switch(settings->v0.version) {
-            case 0: reset(&settings->v0); break;
-            case 1: reset(&settings->v1); break;
-            case 2: reset(&settings->v2); break;
-            default: break;
+        switch (settings->v0.version)
+        {
+        case 0:
+            reset(&settings->v0);
+            break;
+        case 1:
+            reset(&settings->v1);
+            break;
+        case 2:
+            reset(&settings->v2);
+            break;
+        default:
+            break;
         }
     }
 
-    bool convertTo_v0(NetworkSettings *settings) {
+    bool convertTo_v0(NetworkSettings *settings)
+    {
         memset(settings, 0, sizeof(NetworkSettings));
         reset(&settings->v0);
         return true;
@@ -412,11 +450,13 @@ namespace BB_NetworkSettings
             memset(&converted, 0, sizeof(NetworkSettings));
             reset(&converted.v1);
             strncpy(converted.v1.ssid, settings->v2.ssid, sizeof(converted.v1.ssid));
-            if(converted.v1.ssid[sizeof(converted.v1.ssid) - 1] != '\0') {
+            if (converted.v1.ssid[sizeof(converted.v1.ssid) - 1] != '\0')
+            {
                 return false;
             }
             strncpy(converted.v1.password, settings->v2.password, sizeof(converted.v1.password));
-            if(converted.v1.password[sizeof(converted.v1.password) - 1] != '\0') {
+            if (converted.v1.password[sizeof(converted.v1.password) - 1] != '\0')
+            {
                 return false;
             }
             memcpy(settings, &converted, sizeof(NetworkSettings));
@@ -445,11 +485,13 @@ namespace BB_NetworkSettings
             memset(&converted, 0, sizeof(NetworkSettings));
             reset(&converted.v2);
             strncpy(converted.v2.ssid, settings->v1.ssid, sizeof(converted.v2.ssid));
-            if(converted.v2.ssid[sizeof(converted.v2.ssid) - 1] != '\0') {
+            if (converted.v2.ssid[sizeof(converted.v2.ssid) - 1] != '\0')
+            {
                 return false;
             }
             strncpy(converted.v2.password, settings->v1.password, sizeof(converted.v2.password));
-            if(converted.v2.password[sizeof(converted.v2.password) - 1] != '\0') {
+            if (converted.v2.password[sizeof(converted.v2.password) - 1] != '\0')
+            {
                 return false;
             }
             strncpy(converted.v2.hostname, "", sizeof(converted.v2.hostname));

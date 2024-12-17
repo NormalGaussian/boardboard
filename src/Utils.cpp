@@ -6,22 +6,28 @@
 using BB_Event::Event;
 using BB_Event::event;
 
-namespace BB_Utils {
+namespace BB_Utils
+{
 
-    RAII_Malloc::RAII_Malloc(size_t size) {
+    Allocation::Allocation(size_t size)
+    {
         _size = size;
         ptr = malloc(_size);
-        if(ptr == NULL) {
+        if (ptr == NULL)
+        {
             event(Event::MALLOC__FAILED);
         }
     }
-    RAII_Malloc::~RAII_Malloc() {
+    Allocation::~Allocation()
+    {
         free(ptr);
     }
-    bool RAII_Malloc::failed_to_allocate() {
+    bool Allocation::failed_to_allocate()
+    {
         return ptr == NULL;
     }
-    size_t RAII_Malloc::size() {
+    size_t Allocation::size()
+    {
         return _size;
     }
 
@@ -72,7 +78,8 @@ namespace BB_Utils {
     bool copyString(char *dest, const char *src, size_t len)
     {
         size_t src_len = strnlen(src, len);
-        if(src_len == len) {
+        if (src_len == len)
+        {
             return false;
         }
         strncpy(dest, src, len);
@@ -82,7 +89,8 @@ namespace BB_Utils {
     bool copyNonEmptyString(char *dest, const char *src, size_t len)
     {
         size_t src_len = strnlen(src, len);
-        if(src_len == 0 || src_len == len) {
+        if (src_len == 0 || src_len == len)
+        {
             return false;
         }
         strncpy(dest, src, len);

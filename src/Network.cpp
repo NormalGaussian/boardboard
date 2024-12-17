@@ -1,15 +1,18 @@
 #include "Network.hpp"
 #include "NetworkSettings.hpp"
 #include "Utils.hpp"
+#include "Logger.hpp"
 
-#define CONNECTED_NETWORK_SETTINGS_ADDRESS 0
-#define HOSTED_NETWORK_SETTINGS_ADDRESS    100
+#define CONNECTED_NETWORK_SETTINGS_ADDRESS 200
+#define HOSTED_NETWORK_SETTINGS_ADDRESS 300
 
-using BB_NetworkSettings::NetworkSettings_v1;
 using BB_NetworkSettings::NetworkSettings;
+using BB_NetworkSettings::NetworkSettings_v1;
 using namespace BB_NetworkSettings;
 using namespace BB_Utils;
-using BB_Display::display;
+using BB_Logger::defaultLogger;
+using BB_Logger::Logger;
+using BB_Logger::LogLevel;
 
 namespace BB_Network
 {
@@ -18,135 +21,146 @@ namespace BB_Network
 
     void Network::WiFiEventHandler(WiFiEvent_t event)
     {
-        display.reset();
-        display.printlnf("[WiFi-event] event: %d\n", event);
+        auto logger = defaultLogger;
+
+        logger->logf("[WiFi-event] event: %d\n", event);
 
         switch (event)
         {
         case ARDUINO_EVENT_WIFI_READY:
-            display.printlnf("WiFi interface ready");
+            logger->log("WiFi interface ready");
             break;
         case ARDUINO_EVENT_WIFI_SCAN_DONE:
-            display.printlnf("Completed scan for access points");
+            logger->log("Completed scan for access points");
             break;
         case ARDUINO_EVENT_WIFI_STA_START:
-            display.printlnf("WiFi client started");
+            logger->log("WiFi client started");
             break;
         case ARDUINO_EVENT_WIFI_STA_STOP:
-            display.printlnf("WiFi clients stopped");
+            logger->log("WiFi clients stopped");
             break;
         case ARDUINO_EVENT_WIFI_STA_CONNECTED:
-            display.printlnf("Connected to access point");
+            logger->log("Connected to access point");
             break;
         case ARDUINO_EVENT_WIFI_STA_DISCONNECTED:
-            display.printlnf("Disconnected from WiFi access point");
+            logger->log("Disconnected from WiFi access point");
             break;
         case ARDUINO_EVENT_WIFI_STA_AUTHMODE_CHANGE:
-            display.printlnf("Authentication mode of access point has changed");
+            logger->log("Authentication mode of access point has changed");
             break;
         case ARDUINO_EVENT_WIFI_STA_GOT_IP:
-            display.printlnf("Obtained IP address: %s", WiFi.localIP());
+            logger->logf("Obtained IP address: %s", WiFi.localIP().toString().c_str());
             break;
         case ARDUINO_EVENT_WIFI_STA_LOST_IP:
-            display.printlnf("Lost IP address and IP address is reset to 0");
+            logger->log("Lost IP address and IP address is reset to 0");
             break;
         case ARDUINO_EVENT_WPS_ER_SUCCESS:
-            display.printlnf("WiFi Protected Setup (WPS): succeeded in enrollee mode");
+            logger->log("WiFi Protected Setup (WPS): succeeded in enrollee mode");
             break;
         case ARDUINO_EVENT_WPS_ER_FAILED:
-            display.printlnf("WiFi Protected Setup (WPS): failed in enrollee mode");
+            logger->log("WiFi Protected Setup (WPS): failed in enrollee mode");
             break;
         case ARDUINO_EVENT_WPS_ER_TIMEOUT:
-            display.printlnf("WiFi Protected Setup (WPS): timeout in enrollee mode");
+            logger->log("WiFi Protected Setup (WPS): timeout in enrollee mode");
             break;
         case ARDUINO_EVENT_WPS_ER_PIN:
-            display.printlnf("WiFi Protected Setup (WPS): pin code in enrollee mode");
+            logger->log("WiFi Protected Setup (WPS): pin code in enrollee mode");
             break;
         case ARDUINO_EVENT_WIFI_AP_START:
-            display.printlnf("WiFi access point started");
+            logger->log("WiFi access point started");
             break;
         case ARDUINO_EVENT_WIFI_AP_STOP:
-            display.printlnf("WiFi access point  stopped");
+            logger->log("WiFi access point stopped");
             break;
         case ARDUINO_EVENT_WIFI_AP_STACONNECTED:
-            display.printlnf("Client connected");
+            logger->log("Client connected");
             break;
         case ARDUINO_EVENT_WIFI_AP_STADISCONNECTED:
-            display.printlnf("Client disconnected");
+            logger->log("Client disconnected");
             break;
         case ARDUINO_EVENT_WIFI_AP_STAIPASSIGNED:
-            display.printlnf("Assigned IP address to client");
+            logger->log("Assigned IP address to client");
             break;
         case ARDUINO_EVENT_WIFI_AP_PROBEREQRECVED:
-            display.printlnf("Received probe request");
+            logger->log("Received probe request");
             break;
         case ARDUINO_EVENT_WIFI_AP_GOT_IP6:
-            display.printlnf("AP IPv6 is preferred");
+            logger->log("AP IPv6 is preferred");
             break;
         case ARDUINO_EVENT_WIFI_STA_GOT_IP6:
-            display.printlnf("STA IPv6 is preferred");
+            logger->log("STA IPv6 is preferred");
             break;
         case ARDUINO_EVENT_ETH_GOT_IP6:
-            display.printlnf("Ethernet IPv6 is preferred");
+            logger->log("Ethernet IPv6 is preferred");
             break;
         case ARDUINO_EVENT_ETH_START:
-            display.printlnf("Ethernet started");
+            logger->log("Ethernet started");
             break;
         case ARDUINO_EVENT_ETH_STOP:
-            display.printlnf("Ethernet stopped");
+            logger->log("Ethernet stopped");
             break;
         case ARDUINO_EVENT_ETH_CONNECTED:
-            display.printlnf("Ethernet connected");
+            logger->log("Ethernet connected");
             break;
         case ARDUINO_EVENT_ETH_DISCONNECTED:
-            display.printlnf("Ethernet disconnected");
+            logger->log("Ethernet disconnected");
             break;
         case ARDUINO_EVENT_ETH_GOT_IP:
-            display.printlnf("Obtained IP address");
+            logger->log("Obtained IP address");
             break;
         default:
             break;
         }
     }
 
-    bool Network::loadSettings() {
+    bool Network::loadSettings()
+    {
         bool result = true;
         NetworkSettings union_tmp;
-        
+
         // Load connected network settings
-        if(BB_NetworkSettings::load(CONNECTED_NETWORK_SETTINGS_ADDRESS, &union_tmp) && BB_NetworkSettings::convertTo_v1(&union_tmp)) {
+        if (BB_NetworkSettings::load(CONNECTED_NETWORK_SETTINGS_ADDRESS, &union_tmp) && BB_NetworkSettings::convertTo_v1(&union_tmp))
+        {
             memcpy(&connected_network_settings, &union_tmp.v1, sizeof(NetworkSettings_v1));
-        } else {
+        }
+        else
+        {
             result = false;
         }
 
         // Load hosted network settings
-        if(BB_NetworkSettings::load(HOSTED_NETWORK_SETTINGS_ADDRESS, &union_tmp) && BB_NetworkSettings::convertTo_v1(&union_tmp)) {
+        if (BB_NetworkSettings::load(HOSTED_NETWORK_SETTINGS_ADDRESS, &union_tmp) && BB_NetworkSettings::convertTo_v1(&union_tmp))
+        {
             memcpy(&hosted_network_settings, &union_tmp.v1, sizeof(NetworkSettings_v1));
-        } else {
+        }
+        else
+        {
             result = false;
         }
 
         return result;
     }
 
-    bool Network::saveSettings() {
+    bool Network::saveSettings()
+    {
         bool savedConnected = BB_NetworkSettings::save(CONNECTED_NETWORK_SETTINGS_ADDRESS, &connected_network_settings);
         bool savedHosted = BB_NetworkSettings::save(HOSTED_NETWORK_SETTINGS_ADDRESS, &hosted_network_settings);
 
         return savedConnected && savedHosted;
     }
 
-    bool Network::constructor(int address_offset) {
+    bool Network::constructor(int address_offset)
+    {
         // delete old config
         WiFi.disconnect(true);
-        WiFi.onEvent([](WiFiEvent_t event, WiFiEventInfo_t info)
-                     { network.WiFiEventHandler(event); });
+        WiFi.onEvent([this](WiFiEvent_t event, WiFiEventInfo_t info)
+                     { this->WiFiEventHandler(event); });
 
         return loadSettings();
     }
 
-    Network::Network() {
+    Network::Network()
+    {
         constructor(0);
     }
 
@@ -166,40 +180,47 @@ namespace BB_Network
         WiFi.disconnect(true, true);
     }
 
-    bool Network::connect() {
-        mode = Mode::CLIENT;
+    bool Network::connect(int timeout_s)
+    {
 
         NetworkSettings_v1 *settings = &connected_network_settings;
 
-        display.reset();
-        display.printlnf("Connecting to %s", settings->ssid);
+        if (settings->ssid[0] == '\0' || settings->password[0] == '\0')
+        {
+            // No settings to connect with
+            return false;
+        }
+
+        mode = Mode::CLIENT;
 
         WiFi.begin(settings->ssid, settings->password);
 
-        while (WiFi.status() != WL_CONNECTED)
+        int attempts = 0;
+        while (WiFi.status() != WL_CONNECTED && attempts < timeout_s)
         {
             delay(1000);
-            display.printlnf("Connecting...");
-
-            // TODO: Add timeout & false return
+            attempts++;
         }
 
-        display.printlnf("Connected to %s", settings->ssid);
-        
-        display.printlnf("IP: %s", IP());
-
+        if (WiFi.status() != WL_CONNECTED)
+        {
+            disconnect();
+            return false;
+        }
         return true;
     }
 
-    bool Network::updateConnection(const char *ssid, const char *password) {
+    bool Network::updateConnection(const char *ssid, const char *password)
+    {
         NetworkSettings_v1 newSettings;
         BB_NetworkSettings::reset(&newSettings);
-        
+
         bool result = true;
         result = result && BB_Utils::copyNonEmptyString(newSettings.ssid, ssid, sizeof(newSettings.ssid));
         result = result && BB_Utils::copyNonEmptyString(newSettings.password, password, sizeof(newSettings.password));
 
-        if(result) {
+        if (result)
+        {
             memcpy(&connected_network_settings, &newSettings, sizeof(NetworkSettings_v1));
             result = result && saveSettings();
         }
@@ -207,9 +228,9 @@ namespace BB_Network
         return result;
     }
 
-    bool Network::connect(const char *ssid, const char *password)
+    bool Network::connect(const char *ssid, const char *password, int timeout_s)
     {
-        return updateConnection(ssid, password) && connect();
+        return updateConnection(ssid, password) && connect(timeout_s);
     }
 
     void Network::disconnect()
@@ -218,36 +239,43 @@ namespace BB_Network
         mode = Mode::OFF;
     }
 
-    bool Network::host()
+    bool Network::host(int timeout_s)
     {
         NetworkSettings_v1 *settings = &hosted_network_settings;
-
-        mode = Mode::HOST;
-        display.reset();
-        display.printlnf("Hosting %s", settings->ssid);
-
-        WiFi.softAP(settings->ssid, settings->password);
-        while(WiFi.softAPIP() == INADDR_NONE) {
-            delay(1000);
-            display.printlnf("Hosting...");
+        if (settings->ssid[0] == '\0' || settings->password[0] == '\0')
+        {
+            return false;
         }
 
-        display.printlnf("Hosted %s", settings->ssid);
+        mode = Mode::HOST;
 
-        display.printlnf("IP: %s", IP());
+        WiFi.softAP(settings->ssid, settings->password);
+        int attempts = 0;
+        while (WiFi.softAPIP() == INADDR_NONE && attempts < timeout_s)
+        {
+            delay(1000);
+            attempts++;
+        }
+        if (WiFi.softAPIP() == INADDR_NONE)
+        {
+            stopHosting();
+            return false;
+        }
 
         return true;
     }
 
-    bool Network::updateHost(const char *ssid, const char *password) {
+    bool Network::updateHost(const char *ssid, const char *password)
+    {
         NetworkSettings_v1 newSettings;
         BB_NetworkSettings::reset(&newSettings);
-        
+
         bool result = true;
         result = result && BB_Utils::copyNonEmptyString(newSettings.ssid, ssid, sizeof(newSettings.ssid));
         result = result && BB_Utils::copyNonEmptyString(newSettings.password, password, sizeof(newSettings.password));
 
-        if(result) {
+        if (result)
+        {
             memcpy(&hosted_network_settings, &newSettings, sizeof(NetworkSettings_v1));
             result = result && saveSettings();
         }
@@ -255,9 +283,9 @@ namespace BB_Network
         return result;
     }
 
-    bool Network::host(const char *ssid, const char *password)
+    bool Network::host(const char *ssid, const char *password, int timeout_s)
     {
-        return updateHost(ssid, password) && host();
+        return updateHost(ssid, password) && host(timeout_s);
     }
 
     void Network::stopHosting()
@@ -270,14 +298,32 @@ namespace BB_Network
     {
         switch (mode)
         {
-            case Mode::CLIENT:
-                return WiFi.localIP().toString();
-            case Mode::HOST:
-                return WiFi.softAPIP().toString();
-            default:
-                return "";
+        case Mode::CLIENT:
+            return WiFi.localIP().toString();
+        case Mode::HOST:
+            return WiFi.softAPIP().toString();
+        default:
+            return "";
         }
     }
 
-    Network network = Network();
+    std::shared_ptr<Network> network = nullptr;
+    std::shared_ptr<Network> getNetwork(int address_offset)
+    {
+        if (network == nullptr)
+        {
+            network = std::make_shared<Network>(address_offset);
+        }
+        return network;
+    }
+
+    bool Network::hasConnectionDetails()
+    {
+        return connected_network_settings.ssid[0] != '\0';
+    }
+
+    bool Network::hasHostDetails()
+    {
+        return hosted_network_settings.ssid[0] != '\0';
+    }
 }

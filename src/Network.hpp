@@ -48,14 +48,16 @@ namespace BB_Network
             return mode;
         }
 
+        bool hasConnectionDetails();
         bool updateConnection(const char *ssid, const char *password);
-        bool connect();
-        bool connect(const char *ssid, const char *password);
+        bool connect(int timeout_s = 10);
+        bool connect(const char *ssid, const char *password, int timeout_s = 10);
         void disconnect();
 
+        bool hasHostDetails();
         bool updateHost(const char *ssid, const char *password);
-        bool host();
-        bool host(const char *ssid, const char *password);
+        bool host(int timeout_s = 10);
+        bool host(const char *ssid, const char *password, int timeout_s = 10);
         void stopHosting();
 
         String IP();
@@ -64,7 +66,7 @@ namespace BB_Network
     /**
      * The device only has one network setup, so it should be a singleton.
      */
-    extern Network network;
+    std::shared_ptr<Network> getNetwork(int address_offset = 0);
 
 };
 
