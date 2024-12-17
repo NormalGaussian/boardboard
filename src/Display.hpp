@@ -28,6 +28,20 @@ namespace BB_Display
          *  and move the cursor to the next line.
          */
         virtual size_t printlnf(const char *format, ...) = 0;
+
+        /**
+         * Get the current cursor position.
+         */
+        virtual int16_t getCursorX() = 0;
+        virtual int16_t getCursorY() = 0;
+        /**
+         * Set the cursor position.
+         */
+        virtual void setCursor(int16_t x, int16_t y) = 0;
+
+        virtual void resetCursorTo(int16_t x, int16_t y) = 0;
+
+        virtual void resetLineTo(int16_t y) = 0;
     };
 
     /**

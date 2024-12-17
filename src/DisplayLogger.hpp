@@ -14,7 +14,6 @@ namespace BB_Logger {
         public:
             DisplayLogger();
             void log(LogLevel level, const char *message) override;
-            void logf(LogLevel level, const char *message, ...) override;
         };
 
         std::shared_ptr<DisplayLogger> getDisplayLogger();

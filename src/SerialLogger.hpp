@@ -11,7 +11,6 @@ namespace BB_Logger {
     private:
         std::shared_ptr<SerialConnection> connection;
         void log(LogLevel level, const char *message) override;
-        void logf(LogLevel level, const char *message, ...) override;
     public:
         SerialLogger();
         static std::shared_ptr<SerialLogger> create();

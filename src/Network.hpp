@@ -39,14 +39,14 @@ namespace BB_Network
         bool loadSettings();
 
     public:
-        Network();
-        Network(int address_offset);
+        Network(int address_offset = 0);
         ~Network();
 
         Mode getMode() {
             return mode;
         }
 
+        bool connected();
         bool hasConnectionDetails();
         bool updateConnection(const char *ssid, const char *password);
         bool connect(int timeout_s = 10);

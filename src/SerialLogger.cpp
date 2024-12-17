@@ -14,17 +14,6 @@ namespace BB_Logger
         connection = BB_Serial::getSerialConnection();
     }
 
-    void SerialLogger::logf(LogLevel level, const char *message, ...)
-    {
-        va_list args;
-        va_start(args, message);
-        char buffer[256];
-        vsnprintf(buffer, sizeof(buffer), message, args);
-        va_end(args);
-
-        log(level, buffer);
-    }
-
     void SerialLogger::log(LogLevel level, const char *message)
     {
         auto serial = connection->getSerial();

@@ -19,17 +19,42 @@ namespace BB_Event
         NETWORK_SETTINGS__DEFAULT_SETTINGS,
         NETWORK_SETTINGS__USING_SETTINGS,
 
+        NETWORK__SET_CONNECTION,
+        NETWORK__FAILED_SET_CONNECTION,
+        NETWORK__CONNECTED,
+        NETWORK__FAILED_CONNECT_TIMEOUT,
+        NETWORK__FAILED_CONNECT_INVALID,
+        NETWORK__DISCONNECTED,
+        NETWORK__SET_HOST,
+        NETWORK__FAILED_SET_HOST,
+        NETWORK__HOSTED,
+        NETWORK__FAILED_HOST_TIMEOUT,
+        NETWORK__FAILED_HOST_INVALID,
+        NETWORK__STOPPED_HOSTING,
+        NETWORK__GET_NETWORK,
+        NETWORK__INITIALISED,
+        NETWORK__DESTROYED,
+
+        DISPLAY__INITIALISED,
+        DISPLAY__DESTROYED,
+        DISPLAY__RESET,
+        DISPLAY__GET_DISPLAY,
+
+        SERIAL__INITIALISED,
+        SERIAL__DESTROYED,
+        SERIAL__GET_SERIAL_CONNECTION,
+
         MALLOC__FAILED,
     };
     
-    using EventHandler = void(*)(Event);
+    using EventHandler = std::function<void(Event)>;
 
     void event(Event event);
 
     class Registration {
-    private:
-        EventHandler callback;
     public:
+        EventHandler callback;
+        Event event;
         Registration(EventHandler callback, Event event);
         ~Registration();
         static std::shared_ptr<Registration> create(EventHandler callback, Event event);

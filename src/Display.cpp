@@ -6,6 +6,8 @@
 
 #include <memory>
 
+#include "Event.hpp"
+
 // Device specific pinouts
 #define TFT_MOSI 19
 #define TFT_SCLK 18
@@ -13,6 +15,9 @@
 #define TFT_DC 16
 #define TFT_RST 23
 #define TFT_BL 4
+
+using BB_Event::event;
+using BB_Event::Event;
 
 namespace BB_Display
 {
@@ -34,9 +39,11 @@ namespace BB_Display
 
             // Initalise with the correct resolution (x,y)
             tft.init(135, 240);
+            event(Event::DISPLAY__INITIALISED);
         }
         ~DisplayActual() {
             tft.~Adafruit_ST7789();
+            event(Event::DISPLAY__DESTROYED);
         }
         void reset() override {
             // tft.fillScreen(ST77XX_RED); // A flash of red to show the reset
@@ -47,6 +54,7 @@ namespace BB_Display
             tft.setTextColor(ST77XX_WHITE);
             tft.setTextSize(1);
             tft.setTextWrap(true);
+            event(Event::DISPLAY__RESET);
         };
 
         size_t printf(const char *format, ...) override {
@@ -67,6 +75,29 @@ namespace BB_Display
             size_t size = tft.println(printBuffer);
             return size;
         };
+
+        int16_t getCursorX() override {
+            return tft.getCursorX();
+        }
+        int16_t getCursorY() override {
+            return tft.getCursorY();
+        }
+        void setCursor(int16_t x, int16_t y) override {
+            tft.setCursor(x, y);
+        }
+        void resetCursorTo(int16_t x, int16_t y) {
+            auto w = tft.getCursorX() - x;
+            auto h = tft.getCursorY() - y;
+            tft.writeFillRect(x, y, w, h, ST77XX_BLACK);
+            tft.setCursor(x, y);
+        }
+
+        void resetLineTo(int16_t y) {
+            auto w = tft.width();
+            auto h = tft.getCursorY() - y;
+            tft.writeFillRect(0, y, w, h, ST77XX_BLACK);
+            tft.setCursor(0, y);
+        }
     };
 
 
@@ -84,11 +115,23 @@ namespace BB_Display
         {
             return 0;
         }
+        int16_t getCursorX() override
+        {
+            return 0;
+        }
+        int16_t getCursorY() override
+        {
+            return 0;
+        }
+        void setCursor(int16_t x, int16_t y) override {}
+        void resetCursorTo(int16_t x, int16_t y) override {}
+        void resetLineTo(int16_t y) override {}
     };
     
     std::shared_ptr<Display> display = nullptr;
     std::shared_ptr<Display> getDisplay()
     {
+        event(Event::DISPLAY__GET_DISPLAY);
         if (display == nullptr)
         {
             display = std::make_shared<DisplayActual>();

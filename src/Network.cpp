@@ -2,6 +2,7 @@
 #include "NetworkSettings.hpp"
 #include "Utils.hpp"
 #include "Logger.hpp"
+#include "Event.hpp"
 
 #define CONNECTED_NETWORK_SETTINGS_ADDRESS 200
 #define HOSTED_NETWORK_SETTINGS_ADDRESS 300
@@ -13,6 +14,8 @@ using namespace BB_Utils;
 using BB_Logger::defaultLogger;
 using BB_Logger::Logger;
 using BB_Logger::LogLevel;
+using BB_Event::event;
+using BB_Event::Event;
 
 namespace BB_Network
 {
@@ -159,13 +162,9 @@ namespace BB_Network
         return loadSettings();
     }
 
-    Network::Network()
-    {
-        constructor(0);
-    }
-
     Network::Network::Network(int address_offset)
     {
+        event(Event::NETWORK__INITIALISED);
         constructor(address_offset);
     }
 
@@ -178,6 +177,7 @@ namespace BB_Network
 
         // Shut down wifi (erasing credentials)
         WiFi.disconnect(true, true);
+        event(Event::NETWORK__DESTROYED);
     }
 
     bool Network::connect(int timeout_s)
@@ -188,6 +188,7 @@ namespace BB_Network
         if (settings->ssid[0] == '\0' || settings->password[0] == '\0')
         {
             // No settings to connect with
+            event(Event::NETWORK__FAILED_CONNECT_INVALID);
             return false;
         }
 
@@ -205,9 +206,16 @@ namespace BB_Network
         if (WiFi.status() != WL_CONNECTED)
         {
             disconnect();
+            event(Event::NETWORK__FAILED_CONNECT_TIMEOUT);
             return false;
         }
+        event(Event::NETWORK__CONNECTED);
         return true;
+    }
+
+    bool Network::connected()
+    {
+        return WiFi.status() == WL_CONNECTED;
     }
 
     bool Network::updateConnection(const char *ssid, const char *password)
@@ -222,7 +230,13 @@ namespace BB_Network
         if (result)
         {
             memcpy(&connected_network_settings, &newSettings, sizeof(NetworkSettings_v1));
-            result = result && saveSettings();
+            result = result && BB_NetworkSettings::save(CONNECTED_NETWORK_SETTINGS_ADDRESS, &connected_network_settings);
+        }
+
+        if(result) {
+            event(Event::NETWORK__SET_CONNECTION);
+        } else {
+            event(Event::NETWORK__FAILED_SET_CONNECTION);
         }
 
         return result;
@@ -236,6 +250,7 @@ namespace BB_Network
     void Network::disconnect()
     {
         WiFi.disconnect(true, true);
+        event(Event::NETWORK__DISCONNECTED);
         mode = Mode::OFF;
     }
 
@@ -244,6 +259,7 @@ namespace BB_Network
         NetworkSettings_v1 *settings = &hosted_network_settings;
         if (settings->ssid[0] == '\0' || settings->password[0] == '\0')
         {
+            event(Event::NETWORK__FAILED_HOST_INVALID);
             return false;
         }
 
@@ -259,9 +275,11 @@ namespace BB_Network
         if (WiFi.softAPIP() == INADDR_NONE)
         {
             stopHosting();
+            event(Event::NETWORK__FAILED_HOST_TIMEOUT);
             return false;
         }
 
+        event(Event::NETWORK__HOSTED);
         return true;
     }
 
@@ -277,7 +295,13 @@ namespace BB_Network
         if (result)
         {
             memcpy(&hosted_network_settings, &newSettings, sizeof(NetworkSettings_v1));
-            result = result && saveSettings();
+            result = result && BB_NetworkSettings::save(HOSTED_NETWORK_SETTINGS_ADDRESS, &hosted_network_settings);
+        }
+        
+        if(result) {
+            event(Event::NETWORK__SET_HOST);
+        } else {
+            event(Event::NETWORK__FAILED_SET_HOST);
         }
 
         return result;
@@ -291,6 +315,7 @@ namespace BB_Network
     void Network::stopHosting()
     {
         WiFi.softAPdisconnect(true);
+        event(Event::NETWORK__STOPPED_HOSTING);
         mode = Mode::OFF;
     }
 
@@ -310,6 +335,7 @@ namespace BB_Network
     std::shared_ptr<Network> network = nullptr;
     std::shared_ptr<Network> getNetwork(int address_offset)
     {
+        event(Event::NETWORK__GET_NETWORK);
         if (network == nullptr)
         {
             network = std::make_shared<Network>(address_offset);

@@ -24,17 +24,6 @@ namespace BB_Logger
         this->display = getDisplay();
     }
 
-    void DisplayLogger::logf(LogLevel level, const char *message, ...)
-    {
-        va_list args;
-        va_start(args, message);
-        char buffer[256];
-        vsnprintf(buffer, sizeof(buffer), message, args);
-        va_end(args);
-
-        log(level, buffer);
-    }
-
     void DisplayLogger::log(LogLevel level, const char *message)
     {
         auto display = this->display.lock();
