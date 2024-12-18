@@ -57,6 +57,13 @@ namespace BB_Display
             event(Event::DISPLAY__RESET);
         };
 
+        void setTextColour(uint16_t colour) {
+            tft.setTextColor(colour);
+        }
+        void setTextWrap(bool wrap) {
+            tft.setTextWrap(wrap);
+        }
+
         size_t printf(const char *format, ...) override {
             va_list args;
             va_start(args, format);
@@ -98,6 +105,7 @@ namespace BB_Display
             tft.writeFillRect(0, y, w, h, ST77XX_BLACK);
             tft.setCursor(0, y);
         }
+
     };
 
 
@@ -126,6 +134,8 @@ namespace BB_Display
         void setCursor(int16_t x, int16_t y) override {}
         void resetCursorTo(int16_t x, int16_t y) override {}
         void resetLineTo(int16_t y) override {}
+        void setTextColour(uint16_t color) override {}
+        void setTextWrap(bool wrap) override {}
     };
     
     std::shared_ptr<Display> display = nullptr;

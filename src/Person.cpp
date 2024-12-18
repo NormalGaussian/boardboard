@@ -3,9 +3,9 @@
 #include <Arduino.h>
 
 const uint64_t EOIN_MAC = 0xe492746cdda0;
-const uint64_t MATT_MAC = 0x1;
-const uint64_t GEOR_MAC = 0x2;
-const uint64_t MICH_MAC = 0x3;
+const uint64_t MATT_MAC = 0x46f6e0f908;
+const uint64_t GEOR_MAC = 0x887d746cdda0;
+const uint64_t MICH_MAC = 0x809a6e6cdda0;
 
   Person::Person(uint64_t id) {
     if(id == 0x0) {

@@ -6,6 +6,7 @@
 #include "EventLogger.hpp"
 #include "Event.hpp"
 #include "Person.hpp"
+#include "Messages.hpp"
 
 #include <memory>
 
@@ -21,6 +22,8 @@ std::shared_ptr<BB_Event::EventLogger> eventLogger = nullptr;
 std::shared_ptr<BB_Display::Display> display = nullptr;
 std::shared_ptr<BB_Network::Network> network = nullptr;
 std::shared_ptr<Person> person = nullptr;
+
+void drawTree();
 
 void setup(void)
 {
@@ -70,70 +73,23 @@ void setup(void)
   logger->info("Setup Complete");
 }
 
-// void loop()
-// {
-  // display->reset();
-  // logger->info("Outer Looping");
-  // display->printlnf("IP: %s", network->IP().c_str());
-  // display->printlnf("Mode: %d", network->getMode());
-
-  // switch (network->getMode())
-  // {
-  // case BB_Network::Mode::CLIENT:
-    // logger->info("Mode: CLIENT");
-    // network->disconnect();
-    // network->host();
-    // break;
-
-  // case BB_Network::Mode::OFF:
-    // logger->info("Mode: OFF");
-    // network->host();
-    // break;
-
-  // case BB_Network::Mode::HOST:
-    // logger->info("Mode: HOST");
-    // network->stopHosting();
-    // network->connect();
-    // break;
-
-  // default:
-    // logger->info("Mode: DEFAULT");
-    // network->host();
-    // break;
-  // }
-
-  // delay(3000);
-
-  // for (int i = 0; i < 20; i++)
-  // {
-    // if(i%5 == 0) display->reset();
-    // logger->infof("Inner Looping %d", i);
-    // display->printlnf("IP: %s", network->IP().c_str());
-    // display->printlnf("Mode: %d", network->getMode());
-    // display->printlnf("Iter: %d", i);
-    // delay(1000);
-  // }
-// }
-
 void loop() {
   // Print name
   if(person->isKnown()) {
-    display->printlnf("Merry Christmas %s", person->name);
+    display->printlnf("Mery Christmas %s", person->name);
   } else {
     display->printlnf("Merry Christmas");
     display->printlnf("MAC: 0x%llx", ESP.getEfuseMac());
   }
 
   // Draw tree
-  display->printlnf("       ");
-  display->printlnf("   *   ");
-  display->printlnf("  ***  ");
-  display->printlnf(" ***** ");
-  display->printlnf("*******");
-  display->printlnf("  ***  ");
-  display->printlnf("       ");
+  drawTree();
 
   // Write out instructions to host WiFi on phone
+
+  // Tell the user which wifi network to host
+  // The network name is their name, and the password
+  //  is the first 8 characters of the device MAC address
   char ssid[32];
   memset(ssid, 0, sizeof(ssid));
   char password[64];
@@ -147,7 +103,6 @@ void loop() {
   display->printlnf("Create a WiFi network with the following details:");
   display->printlnf("    SSID: %s", ssid);
   display->printlnf("Password: %s", password);
-
 
   // Connect to WiFi
   auto y = display->getCursorY();
@@ -167,20 +122,43 @@ void loop() {
     display->reset();
 
     display->printlnf("Merry Christmas %s", person->name);
-    display->printlnf("IP: %s", network->IP().c_str());
+    //display->printlnf("IP: %s", network->IP().c_str());
     
     // Draw tree
-    display->printlnf("       ");
-    display->printlnf("   *   ");
-    display->printlnf("  ***  ");
-    display->printlnf(" ***** ");
-    display->printlnf("*******");
-    display->printlnf("  ***  ");
-    display->printlnf("       ");
+    drawTree();
 
     // Download the latest messages
-    // TODO
-    
+    memset(BB_Messages::messages, 0, sizeof(BB_Messages::messages));
+    display->printlnf("Downloading messages...");
+    BB_Messages::update();
+    display->printlnf(BB_Messages::messages);
+
     delay(300000);
   }
+}
+
+void drawTree() {
+  display->setTextColour(0x07E0);
+  display->printlnf("                     ");
+  display->printlnf("          *          ");
+  display->printlnf("         ***         ");
+  display->printlnf("        *****        ");
+  display->printlnf("       *******       ");
+  display->printlnf("      *********      ");
+  display->printlnf("        *****        ");
+  display->printlnf("       *******       ");
+  display->printlnf("      *********      ");
+  display->printlnf("     ***********     ");
+  display->printlnf("    *************    ");
+  display->printlnf("   ***************   ");
+  display->printlnf("     ***********     ");
+  display->printlnf("    *************    ");
+  display->printlnf("   ***************   ");
+  display->printlnf("  *****************  ");
+  display->printlnf(" ******************* ");
+  display->setTextColour(0x9B80);
+  display->printlnf("         ***         ");
+  display->printlnf("         ***         ");
+  display->printlnf("                     ");
+  display->setTextColour(0xFFFF);
 }

@@ -42,6 +42,9 @@ namespace BB_Display
         virtual void resetCursorTo(int16_t x, int16_t y) = 0;
 
         virtual void resetLineTo(int16_t y) = 0;
+
+        virtual void setTextColour(uint16_t color) = 0;
+        virtual void setTextWrap(bool wrap) = 0;
     };
 
     /**
